@@ -3,6 +3,10 @@ TgCrypto
 pyrogram
 apscheduler
 motor
+pyromod==1.5
+pyromongo
+dnspython
+
 
 
 
