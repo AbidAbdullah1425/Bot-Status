@@ -1,9 +1,6 @@
 aiohttp
 TgCrypto
 pyrogram
-pymongo
-pyromod==1.5
-dnspython
 apscheduler
 motor
 
