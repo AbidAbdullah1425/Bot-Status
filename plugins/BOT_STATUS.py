@@ -9,6 +9,8 @@ from bot import Bot
 
 # Initialize MongoDB Database
 db = Database()
+# Initialize scheduler
+scheduler = AsyncIOScheduler()
 
 # Utility function to fetch current time
 def current_time():
