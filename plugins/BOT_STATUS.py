@@ -37,7 +37,7 @@ async def add_bot(client, message):
 
         bot_name, account_name, bot_url = args[1], args[2], args[3]
 
-        # Add bot to database
+        # Add bot to database using insert_or_update
         await db.insert_or_update(
             collection="koyeb_bots",
             query={"name": bot_name, "account": account_name},
@@ -122,4 +122,4 @@ async def check_bot_status():
 
 # Start the periodic status check
 scheduler.add_job(check_bot_status, "interval", minutes=1)
-
+scheduler.start()  # Start the scheduler to begin job execution
