@@ -16,6 +16,7 @@ UPDATE_CHANNEL = int(os.environ.get("UPDATE_CHANNEL", "-1002355785538"))
 
 # OWNER / SUDO USERS
 OWNER = int(os.environ.get("OWNER", "5296584067"))
+OWNER_ID = int(os.environ.get("OWNER_ID", "5296584067"))
 BOT_WORKERS = int(os.environ.get("BOT_WORKERS", "4"))
 
 PORT = os.environ.get("PORT", "8080")
