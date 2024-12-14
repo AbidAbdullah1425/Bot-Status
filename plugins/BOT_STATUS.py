@@ -1,14 +1,14 @@
-from pyrogram import Client, filters
+from pyrogram import filters
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import ClientSession
 from datetime import datetime, timedelta
 from database.database import Database
-from config import API_ID, API_HASH, BOT_TOKEN, UPDATE_CHANNEL, OWNER
-
-from bot import Bot
+from config import UPDATE_CHANNEL, OWNER
+from bot import Bot  # Bot is already initialized as a Client instance
 
 # Initialize MongoDB Database
 db = Database()
+
 # Initialize scheduler
 scheduler = AsyncIOScheduler()
 
@@ -65,25 +65,31 @@ async def remove_bot(client, message):
         return
 
     bot_name, account_name = args[1], args[2]
-    result = db.delete_one(collection="koyeb_bots", query={"name": bot_name, "account": account_name})
-    if result.deleted_count:
-        await message.reply(f"Bot '{bot_name}' (Account: {account_name}) removed successfully.")
-    else:
-        await message.reply(f"No bot found with name '{bot_name}' under account '{account_name}'.")
+    try:
+        result = db.delete_one(collection="koyeb_bots", query={"name": bot_name, "account": account_name})
+        if result.deleted_count:
+            await message.reply(f"Bot '{bot_name}' (Account: {account_name}) removed successfully.")
+        else:
+            await message.reply(f"No bot found with name '{bot_name}' under account '{account_name}'.")
+    except Exception as e:
+        await message.reply(f"Error: {e}")
 
 # List all added bots
 @Bot.on_message(filters.private & filters.command("list_bots") & filters.user(OWNER))
 async def list_bots(client, message):
-    bots = db.find_all(collection="koyeb_bots")
-    if not bots:
-        await message.reply("No bots have been added.")
-        return
+    try:
+        bots = db.find_all(collection="koyeb_bots")
+        if not bots:
+            await message.reply("No bots have been added.")
+            return
 
-    response = "**Monitored Bots:**\n\n"
-    for bot in bots:
-        response += f"- **Name**: {bot['name']}\n  **Account**: {bot['account']}\n  **URL**: {bot['url']}\n\n"
-    response += f"**Total Bots:** {len(bots)}"
-    await message.reply(response)
+        response = "**Monitored Bots:**\n\n"
+        for bot in bots:
+            response += f"- **Name**: {bot['name']}\n  **Account**: {bot['account']}\n  **URL**: {bot['url']}\n\n"
+        response += f"**Total Bots:** {len(bots)}"
+        await message.reply(response)
+    except Exception as e:
+        await message.reply(f"Error: {e}")
 
 # Check bot status periodically
 async def check_bot_status():
@@ -101,8 +107,13 @@ async def check_bot_status():
                             query={"name": bot["name"], "account": bot["account"]},
                             update={"$set": bot},
                         )
-                        # Notify channel and owner
-                        message_text = f"**Bot Name**: {bot['name']}\n**Status**: {status}\n**Uptime**: {calculate_uptime(bot['uptime_start'])}"
+                        # Prepare the status message
+                        message_text = (
+                            f"**Bot Name**: {bot['name']}\n"
+                            f"**Status**: {status}\n"
+                            f"**Uptime**: {calculate_uptime(bot['uptime_start'])}"
+                        )
+                        # Edit or send a new status message
                         if bot["message_id"]:
                             await Bot.edit_message_text(
                                 chat_id=UPDATE_CHANNEL, message_id=bot["message_id"], text=message_text
@@ -115,7 +126,7 @@ async def check_bot_status():
                                 query={"name": bot["name"], "account": bot["account"]},
                                 update={"$set": {"message_id": sent_message.message_id}},
                             )
-                        # Notify owner
+                        # Notify the owner
                         await Bot.send_message(chat_id=OWNER, text=message_text)
             except Exception as e:
                 print(f"Error checking bot '{bot['name']}': {e}")
