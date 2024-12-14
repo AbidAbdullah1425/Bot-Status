@@ -37,8 +37,8 @@ async def add_bot(client, message):
 
         bot_name, account_name, bot_url = args[1], args[2], args[3]
 
-        # Add bot to database using insert_or_update
-        await db.insert_or_update(
+        # Add bot to database
+        db.insert_or_update(
             collection="koyeb_bots",
             query={"name": bot_name, "account": account_name},
             update={
@@ -65,7 +65,7 @@ async def remove_bot(client, message):
         return
 
     bot_name, account_name = args[1], args[2]
-    result = await db.delete_one(collection="koyeb_bots", query={"name": bot_name, "account": account_name})
+    result = db.delete_one(collection="koyeb_bots", query={"name": bot_name, "account": account_name})
     if result.deleted_count:
         await message.reply(f"Bot '{bot_name}' (Account: {account_name}) removed successfully.")
     else:
@@ -74,7 +74,7 @@ async def remove_bot(client, message):
 # List all added bots
 @Bot.on_message(filters.private & filters.command("list_bots") & filters.user(OWNER))
 async def list_bots(client, message):
-    bots = await db.find_all(collection="koyeb_bots")
+    bots = db.find_all(collection="koyeb_bots")
     if not bots:
         await message.reply("No bots have been added.")
         return
@@ -88,7 +88,7 @@ async def list_bots(client, message):
 # Check bot status periodically
 async def check_bot_status():
     async with ClientSession() as session:
-        bots = await db.find_all(collection="koyeb_bots")
+        bots = db.find_all(collection="koyeb_bots")
         for bot in bots:
             try:
                 async with session.get(bot["url"]) as response:
@@ -96,7 +96,7 @@ async def check_bot_status():
                     if bot["status"] != status:
                         bot["status"] = status
                         bot["last_checked"] = current_time()
-                        await db.update_one(
+                        db.insert_or_update(
                             collection="koyeb_bots",
                             query={"name": bot["name"], "account": bot["account"]},
                             update={"$set": bot},
@@ -110,7 +110,7 @@ async def check_bot_status():
                         else:
                             sent_message = await Bot.send_message(chat_id=UPDATE_CHANNEL, text=message_text)
                             bot["message_id"] = sent_message.message_id
-                            await db.update_one(
+                            db.insert_or_update(
                                 collection="koyeb_bots",
                                 query={"name": bot["name"], "account": bot["account"]},
                                 update={"$set": {"message_id": sent_message.message_id}},
@@ -122,4 +122,4 @@ async def check_bot_status():
 
 # Start the periodic status check
 scheduler.add_job(check_bot_status, "interval", minutes=1)
-scheduler.start()  # Start the scheduler to begin job execution
+scheduler.start()
