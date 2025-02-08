@@ -2,6 +2,7 @@ aiohttp
 TgCrypto
 pyrogram
 dnspython
+pyromod
 
 
 
